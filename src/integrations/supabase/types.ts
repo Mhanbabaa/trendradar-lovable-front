@@ -48,6 +48,82 @@ export type Database = {
         }
         Relationships: []
       }
+      alert_history: {
+        Row: {
+          alert_id: string | null
+          id: string
+          notification_sent: boolean | null
+          triggered_at: string | null
+          triggered_value: number | null
+        }
+        Insert: {
+          alert_id?: string | null
+          id?: string
+          notification_sent?: boolean | null
+          triggered_at?: string | null
+          triggered_value?: number | null
+        }
+        Update: {
+          alert_id?: string | null
+          id?: string
+          notification_sent?: boolean | null
+          triggered_at?: string | null
+          triggered_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_history_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alerts: {
+        Row: {
+          alert_type: string
+          condition: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_triggered: string | null
+          product_id: string | null
+          threshold: number | null
+          user_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          condition: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered?: string | null
+          product_id?: string | null
+          threshold?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          condition?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered?: string | null
+          product_id?: string | null
+          threshold?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           created_at: string
@@ -85,6 +161,44 @@ export type Database = {
             columns: ["target_segment_id"]
             isOneToOne: false
             referencedRelation: "customer_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          trendyol_id: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          trendyol_id: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          trendyol_id?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -266,6 +380,139 @@ export type Database = {
         }
         Relationships: []
       }
+      plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_monthly: number
+          price_yearly: number
+          product_limit: number
+          update_frequency: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_monthly: number
+          price_yearly: number
+          product_limit: number
+          update_frequency?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_monthly?: number
+          price_yearly?: number
+          product_limit?: number
+          update_frequency?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      product_data: {
+        Row: {
+          discount_percentage: number | null
+          id: string
+          previous_price: number | null
+          price: number | null
+          product_id: string | null
+          rating: number | null
+          review_count: number | null
+          stock_status: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          discount_percentage?: number | null
+          id?: string
+          previous_price?: number | null
+          price?: number | null
+          product_id?: string | null
+          rating?: number | null
+          review_count?: number | null
+          stock_status?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          discount_percentage?: number | null
+          id?: string
+          previous_price?: number | null
+          price?: number | null
+          product_id?: string | null
+          rating?: number | null
+          review_count?: number | null
+          stock_status?: string | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_data_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_updated: string | null
+          name: string
+          seller: string | null
+          trendyol_id: string
+          url: string
+          user_id: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated?: string | null
+          name: string
+          seller?: string | null
+          trendyol_id: string
+          url: string
+          user_id?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated?: string | null
+          name?: string
+          seller?: string | null
+          trendyol_id?: string
+          url?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -293,6 +540,231 @@ export type Database = {
           updated_at?: string
           user_id?: string
           website?: string | null
+        }
+        Relationships: []
+      }
+      report_history: {
+        Row: {
+          delivery_status: string | null
+          file_path: string | null
+          generated_at: string | null
+          id: string
+          report_id: string | null
+        }
+        Insert: {
+          delivery_status?: string | null
+          file_path?: string | null
+          generated_at?: string | null
+          id?: string
+          report_id?: string | null
+        }
+        Update: {
+          delivery_status?: string | null
+          file_path?: string | null
+          generated_at?: string | null
+          id?: string
+          report_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_history_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_generated: string | null
+          name: string
+          parameters: Json | null
+          report_type: string
+          schedule: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_generated?: string | null
+          name: string
+          parameters?: Json | null
+          report_type: string
+          schedule?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_generated?: string | null
+          name?: string
+          parameters?: Json | null
+          report_type?: string
+          schedule?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          created_at: string | null
+          id: string
+          product_id: string | null
+          rating: number | null
+          review_date: string | null
+          review_text: string | null
+          sentiment: string | null
+          sentiment_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          rating?: number | null
+          review_date?: string | null
+          review_text?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          rating?: number | null
+          review_date?: string | null
+          review_text?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          auto_renew: boolean | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          is_trial: boolean | null
+          payment_method: string | null
+          payment_status: string | null
+          plan_id: string | null
+          start_date: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_trial?: boolean | null
+          payment_method?: string | null
+          payment_status?: string | null
+          plan_id?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_trial?: boolean | null
+          payment_method?: string | null
+          payment_status?: string | null
+          plan_id?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          id: string
+          invited_at: string | null
+          joined_at: string | null
+          member_email: string
+          role: string
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          invited_at?: string | null
+          joined_at?: string | null
+          member_email: string
+          role?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          invited_at?: string | null
+          joined_at?: string | null
+          member_email?: string
+          role?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          email_alerts: boolean | null
+          id: string
+          push_alerts: boolean | null
+          sms_alerts: boolean | null
+          system_notifications: boolean | null
+          updated_at: string | null
+          user_id: string | null
+          weekly_summary: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_alerts?: boolean | null
+          id?: string
+          push_alerts?: boolean | null
+          sms_alerts?: boolean | null
+          system_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          weekly_summary?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          email_alerts?: boolean | null
+          id?: string
+          push_alerts?: boolean | null
+          sms_alerts?: boolean | null
+          system_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          weekly_summary?: boolean | null
         }
         Relationships: []
       }
