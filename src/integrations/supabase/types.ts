@@ -308,45 +308,6 @@ export type Database = {
         }
         Relationships: []
       }
-      marketplace_integrations: {
-        Row: {
-          api_key: string | null
-          created_at: string
-          id: string
-          is_active: boolean | null
-          last_sync: string | null
-          marketplace_name: string
-          secret_key: string | null
-          store_url: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          api_key?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          last_sync?: string | null
-          marketplace_name: string
-          secret_key?: string | null
-          store_url?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          api_key?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          last_sync?: string | null
-          marketplace_name?: string
-          secret_key?: string | null
-          store_url?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       metrics: {
         Row: {
           change_percentage: number | null
