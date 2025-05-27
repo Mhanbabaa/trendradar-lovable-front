@@ -14,7 +14,7 @@ const Dashboard = () => {
       description: "Takip edilen ürün sayısı",
       icon: Package,
       change: "+0%",
-      changeType: "positive" as const,
+      changeType: "positive",
       gradient: "from-blue-500 to-blue-600"
     },
     {
@@ -23,7 +23,7 @@ const Dashboard = () => {
       description: "Bekleyen uyarı sayısı",
       icon: Bell,
       change: "+0%",
-      changeType: "neutral" as const,
+      changeType: "neutral",
       gradient: "from-amber-500 to-orange-500"
     },
     {
@@ -32,7 +32,7 @@ const Dashboard = () => {
       description: "Oluşturulan rapor sayısı",
       icon: FileText,
       change: "+0%",
-      changeType: "positive" as const,
+      changeType: "positive",
       gradient: "from-green-500 to-emerald-500"
     },
     {
@@ -41,7 +41,7 @@ const Dashboard = () => {
       description: "Ürün değerlendirmeleri",
       icon: Star,
       change: "0%",
-      changeType: "neutral" as const,
+      changeType: "neutral",
       gradient: "from-purple-500 to-indigo-500"
     }
   ];
