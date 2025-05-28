@@ -35,42 +35,92 @@ export class PackageService {
   }
   
   async getTenantPackage(tenantId: string): Promise<Plan> {
-    const { data: subscription, error: subError } = await supabase
-      .from('subscriptions')
-      .select('*, plans(*)')
-      .eq('tenant_id', tenantId)
-      .eq('status', 'active')
-      .single()
-    
-    if (subError) {
-      // Return default plan if no subscription found
+    try {
+      // Try to get active subscription first
+      const { data: subscription, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*, plans(*)')
+        .eq('tenant_id', tenantId)
+        .eq('status', 'active')
+        .single()
+      
+      if (!subError && subscription?.plans) {
+        return subscription.plans as Plan
+      }
+      
+      // Fallback: Return default plan if no subscription found
       const { data: defaultPlan, error: planError } = await supabase
         .from('plans')
         .select('*')
         .eq('name', 'Başlangıç')
         .single()
       
-      if (planError) throw new Error(`Default plan fetch error: ${planError.message}`)
+      if (planError) {
+        console.error('Error fetching default plan:', planError)
+        // Return a basic fallback plan
+        return {
+          id: 'default',
+          name: 'Başlangıç',
+          description: 'Başlangıç Paketi',
+          price_monthly: 199,
+          price_yearly: 1990,
+          product_limit: 10,
+          update_frequency: 'daily',
+          features: {
+            basic_reports: true,
+            price_tracking: true,
+            sentiment_analysis: false,
+            category_analysis: false,
+            comprehensive_reports: false,
+            api_access: false,
+            real_time_updates: false,
+            unlimited_history: false
+          },
+          is_active: true
+        }
+      }
+      
       return defaultPlan as Plan
+    } catch (error) {
+      console.error('Error in getTenantPackage:', error)
+      // Return basic fallback plan
+      return {
+        id: 'fallback',
+        name: 'Başlangıç',
+        description: 'Başlangıç Paketi',
+        price_monthly: 199,
+        price_yearly: 1990,
+        product_limit: 10,
+        update_frequency: 'daily',
+        features: {
+          basic_reports: true,
+          price_tracking: true
+        },
+        is_active: true
+      }
     }
-    
-    return subscription.plans as Plan
   }
   
   async checkProductLimit(tenantId: string): Promise<boolean> {
-    const packageInfo = await this.getTenantPackage(tenantId)
-    
-    // Get current product count
-    const productCount = await this.dbService.countTenantData('products', tenantId)
-    
-    // Check against package limit (-1 means unlimited)
-    if (packageInfo.product_limit === -1) return true
-    
-    return productCount < packageInfo.product_limit
+    try {
+      const packageInfo = await this.getTenantPackage(tenantId)
+      
+      // Get current product count
+      const productCount = await this.dbService.countTenantData('products', tenantId)
+      
+      // Check against package limit (-1 means unlimited)
+      if (packageInfo.product_limit === -1) return true
+      
+      return productCount < packageInfo.product_limit
+    } catch (error) {
+      console.error('Error checking product limit:', error)
+      return false
+    }
   }
   
   hasFeature(packageInfo: Plan, feature: string): boolean {
-    return packageInfo.features?.[feature] === true
+    if (!packageInfo.features) return false
+    return packageInfo.features[feature] === true
   }
   
   getDataCollectionFrequency(packageInfo: Plan): string {

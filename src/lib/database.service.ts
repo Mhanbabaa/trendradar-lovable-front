@@ -7,15 +7,31 @@ export class DatabaseService {
     tenantId: string, 
     query: Record<string, any> = {}
   ): Promise<T[]> {
-    const { data, error } = await supabase
-      .from(table as any)
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .match(query)
-    
-    if (error) throw new Error(`Data fetch error: ${error.message}`)
-    
-    return data as T[]
+    try {
+      let baseQuery = supabase.from(table as any).select('*')
+      
+      // Add tenant_id filter if tenantId is provided
+      if (tenantId) {
+        baseQuery = baseQuery.eq('tenant_id', tenantId)
+      }
+      
+      // Apply additional query filters
+      Object.keys(query).forEach(key => {
+        baseQuery = baseQuery.eq(key, query[key])
+      })
+      
+      const { data, error } = await baseQuery
+      
+      if (error) {
+        console.error(`Database query error for table ${table}:`, error)
+        throw new Error(`Data fetch error: ${error.message}`)
+      }
+      
+      return (data || []) as T[]
+    } catch (error) {
+      console.error(`Error in getTenantData for table ${table}:`, error)
+      return []
+    }
   }
   
   async saveTenantData<T>(
@@ -23,20 +39,28 @@ export class DatabaseService {
     tenantId: string, 
     data: Record<string, any>
   ): Promise<T> {
-    const dataWithTenant = {
-      ...data,
-      tenant_id: tenantId
+    try {
+      const dataWithTenant = {
+        ...data,
+        tenant_id: tenantId
+      }
+      
+      const { data: result, error } = await supabase
+        .from(table as any)
+        .insert(dataWithTenant)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error(`Database insert error for table ${table}:`, error)
+        throw new Error(`Data save error: ${error.message}`)
+      }
+      
+      return result as T
+    } catch (error) {
+      console.error(`Error in saveTenantData for table ${table}:`, error)
+      throw error
     }
-    
-    const { data: result, error } = await supabase
-      .from(table as any)
-      .insert(dataWithTenant)
-      .select()
-      .single()
-    
-    if (error) throw new Error(`Data save error: ${error.message}`)
-    
-    return result as T
   }
   
   async updateTenantData<T>(
@@ -45,17 +69,25 @@ export class DatabaseService {
     id: string, 
     data: Record<string, any>
   ): Promise<T> {
-    const { data: result, error } = await supabase
-      .from(table as any)
-      .update(data)
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
-      .select()
-      .single()
-    
-    if (error) throw new Error(`Data update error: ${error.message}`)
-    
-    return result as T
+    try {
+      const { data: result, error } = await supabase
+        .from(table as any)
+        .update(data)
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error(`Database update error for table ${table}:`, error)
+        throw new Error(`Data update error: ${error.message}`)
+      }
+      
+      return result as T
+    } catch (error) {
+      console.error(`Error in updateTenantData for table ${table}:`, error)
+      throw error
+    }
   }
   
   async deleteTenantData(
@@ -63,13 +95,21 @@ export class DatabaseService {
     tenantId: string, 
     id: string
   ): Promise<void> {
-    const { error } = await supabase
-      .from(table as any)
-      .delete()
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
-    
-    if (error) throw new Error(`Data delete error: ${error.message}`)
+    try {
+      const { error } = await supabase
+        .from(table as any)
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+      
+      if (error) {
+        console.error(`Database delete error for table ${table}:`, error)
+        throw new Error(`Data delete error: ${error.message}`)
+      }
+    } catch (error) {
+      console.error(`Error in deleteTenantData for table ${table}:`, error)
+      throw error
+    }
   }
   
   async countTenantData(
@@ -77,14 +117,33 @@ export class DatabaseService {
     tenantId: string, 
     query: Record<string, any> = {}
   ): Promise<number> {
-    const { count, error } = await supabase
-      .from(table as any)
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .match(query)
-    
-    if (error) throw new Error(`Count error: ${error.message}`)
-    
-    return count || 0
+    try {
+      let baseQuery = supabase.from(table as any).select('*', { count: 'exact', head: true })
+      
+      if (tenantId) {
+        baseQuery = baseQuery.eq('tenant_id', tenantId)
+      }
+      
+      Object.keys(query).forEach(key => {
+        baseQuery = baseQuery.eq(key, query[key])
+      })
+      
+      const { count, error } = await baseQuery
+      
+      if (error) {
+        console.error(`Database count error for table ${table}:`, error)
+        return 0
+      }
+      
+      return count || 0
+    } catch (error) {
+      console.error(`Error in countTenantData for table ${table}:`, error)
+      return 0
+    }
+  }
+  
+  // Direct supabase access for complex queries
+  get client() {
+    return supabase
   }
 }

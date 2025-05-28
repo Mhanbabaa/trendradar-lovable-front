@@ -53,11 +53,16 @@ export class NotificationService {
       limit?: number
     } = {}
   ): Promise<NotificationLog[]> {
-    const query: Record<string, any> = {}
-    
-    if (options.type) query.type = options.type
-    if (options.notification_type) query.notification_type = options.notification_type
-    
-    return await this.dbService.getTenantData<NotificationLog>('notification_logs', tenantId, query)
+    try {
+      const query: Record<string, any> = {}
+      
+      if (options.type) query.type = options.type
+      if (options.notification_type) query.notification_type = options.notification_type
+      
+      return await this.dbService.getTenantData<NotificationLog>('notification_logs', tenantId, query)
+    } catch (error) {
+      console.error('Error getting notification history:', error)
+      return []
+    }
   }
 }
