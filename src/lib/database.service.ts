@@ -8,7 +8,7 @@ export class DatabaseService {
     query: Record<string, any> = {}
   ): Promise<T[]> {
     const { data, error } = await supabase
-      .from(table)
+      .from(table as any)
       .select('*')
       .eq('tenant_id', tenantId)
       .match(query)
@@ -29,7 +29,7 @@ export class DatabaseService {
     }
     
     const { data: result, error } = await supabase
-      .from(table)
+      .from(table as any)
       .insert(dataWithTenant)
       .select()
       .single()
@@ -46,7 +46,7 @@ export class DatabaseService {
     data: Record<string, any>
   ): Promise<T> {
     const { data: result, error } = await supabase
-      .from(table)
+      .from(table as any)
       .update(data)
       .eq('id', id)
       .eq('tenant_id', tenantId)
@@ -64,7 +64,7 @@ export class DatabaseService {
     id: string
   ): Promise<void> {
     const { error } = await supabase
-      .from(table)
+      .from(table as any)
       .delete()
       .eq('id', id)
       .eq('tenant_id', tenantId)
@@ -78,7 +78,7 @@ export class DatabaseService {
     query: Record<string, any> = {}
   ): Promise<number> {
     const { count, error } = await supabase
-      .from(table)
+      .from(table as any)
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .match(query)

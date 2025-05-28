@@ -44,7 +44,7 @@ export class TenantService {
   ): Promise<{ tenant: Tenant; user: any }> {
     // Create tenant
     const { data: tenant, error: tenantError } = await supabase
-      .from('tenants')
+      .from('tenants' as any)
       .insert({
         name: tenantData.name,
         email: tenantData.email
@@ -70,7 +70,7 @@ export class TenantService {
     
     if (userError) {
       // Cleanup tenant if user creation failed
-      await supabase.from('tenants').delete().eq('id', tenant.id)
+      await supabase.from('tenants' as any).delete().eq('id', tenant.id)
       throw new Error(`User creation error: ${userError.message}`)
     }
     
@@ -99,7 +99,7 @@ export class TenantService {
   
   async getTenantInfo(tenantId: string): Promise<Tenant> {
     const { data: tenant, error } = await supabase
-      .from('tenants')
+      .from('tenants' as any)
       .select('*')
       .eq('id', tenantId)
       .single()
