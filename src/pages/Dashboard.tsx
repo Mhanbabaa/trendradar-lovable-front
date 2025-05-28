@@ -1,17 +1,34 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
+import { useProducts } from "@/hooks/useProducts";
 import DashboardLayout from "@/components/DashboardLayout";
 import { TrendingUp, TrendingDown, Package, Bell, FileText, Users, Star, Activity } from "lucide-react";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { tenant, plan, loading: tenantLoading } = useTenant();
+  const { products, total: totalProducts } = useProducts();
+
+  if (tenantLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Yükleniyor...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const stats = [
     {
       title: "Toplam Ürün",
-      value: "0",
-      description: "Takip edilen ürün sayısı",
+      value: totalProducts.toString(),
+      description: `Takip edilen ürün sayısı (Limit: ${plan?.product_limit === -1 ? 'Sınırsız' : plan?.product_limit || 0})`,
       icon: Package,
       change: "+0%",
       changeType: "positive",
@@ -36,11 +53,11 @@ const Dashboard = () => {
       gradient: "from-green-500 to-emerald-500"
     },
     {
-      title: "Ortalama Rating",
-      value: "0.0",
-      description: "Ürün değerlendirmeleri",
+      title: "Paket",
+      value: plan?.name || "Yükleniyor",
+      description: `${plan?.name} paketi aktif`,
       icon: Star,
-      change: "0%",
+      change: plan?.name === 'Kurumsal' ? 'Premium' : 'Standart',
       changeType: "neutral",
       gradient: "from-purple-500 to-indigo-500"
     }
@@ -54,11 +71,17 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                Hoş geldiniz, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}! 👋
+                Hoş geldiniz, {tenant?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0]}! 👋
               </h1>
               <p className="text-blue-100 text-lg">
                 TrendRadar ile rakiplerinizi takip edin ve pazardaki avantajınızı koruyun.
               </p>
+              {plan && (
+                <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-500 bg-opacity-20 border border-blue-300">
+                  <Star className="w-4 h-4 mr-2" />
+                  {plan.name} Paketi
+                </div>
+              )}
             </div>
             <div className="hidden md:block">
               <Activity className="w-20 h-20 text-blue-200" />
@@ -100,6 +123,43 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Package Features Info */}
+        {plan && (
+          <Card className="border-0 shadow-lg bg-gradient-to-r from-indigo-50 to-purple-50">
+            <CardHeader>
+              <CardTitle className="text-gray-900 flex items-center gap-2">
+                <Star className="w-5 h-5 text-indigo-600" />
+                {plan.name} Paketi Özellikleri
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-indigo-600" />
+                  <span className="text-sm">
+                    {plan.product_limit === -1 ? 'Sınırsız' : plan.product_limit} Ürün Takibi
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-indigo-600" />
+                  <span className="text-sm">
+                    {plan.update_frequency === 'daily' ? 'Günlük' : 
+                     plan.update_frequency === '8hours' ? '8 Saatte Bir' :
+                     plan.update_frequency === 'hourly' ? 'Saatlik' : 
+                     '15 Dakikada Bir'} Güncelleme
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                  <span className="text-sm">
+                    {plan.features?.comprehensive_reports ? 'Gelişmiş' : 'Temel'} Raporlama
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="border-0 shadow-lg">
@@ -119,8 +179,16 @@ const Dashboard = () => {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Package className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-500 mb-4">Henüz takip edilen ürün bulunmuyor.</p>
-                <p className="text-sm text-gray-400">İlk ürününüzü ekleyerek başlayın ve fiyat değişimlerini takip edin.</p>
+                <p className="text-gray-500 mb-4">
+                  {totalProducts === 0 
+                    ? 'Henüz takip edilen ürün bulunmuyor.' 
+                    : 'Henüz fiyat değişikliği tespit edilmedi.'}
+                </p>
+                <p className="text-sm text-gray-400">
+                  {totalProducts === 0 
+                    ? 'İlk ürününüzü ekleyerek başlayın ve fiyat değişimlerini takip edin.'
+                    : 'Sistem düzenli olarak fiyat değişikliklerini kontrol ediyor.'}
+                </p>
               </div>
             </CardContent>
           </Card>
