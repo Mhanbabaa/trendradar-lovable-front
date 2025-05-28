@@ -43,18 +43,7 @@ export class TenantService {
     }
   ): Promise<{ tenant: Tenant; user: any }> {
     try {
-      // Create tenant using raw SQL since table may not be in types yet
-      const { data: tenant, error: tenantError } = await supabase.rpc('create_tenant', {
-        tenant_name: tenantData.name,
-        tenant_email: tenantData.email
-      })
-      
-      if (tenantError) {
-        console.error('Tenant creation error:', tenantError)
-        throw new Error(`Tenant creation error: ${tenantError.message}`)
-      }
-      
-      // Create admin user with tenant_id in metadata
+      // Create admin user first with tenant info in metadata
       const { data: user, error: userError } = await supabase.auth.signUp({
         email: adminUser.email,
         password: adminUser.password,
@@ -62,15 +51,29 @@ export class TenantService {
           data: {
             full_name: adminUser.name,
             company_name: tenantData.name,
-            tenant_id: tenant?.id || 'default',
             role: 'admin'
           }
         }
       })
       
-      if (userError) {
+      if (userError || !user.user) {
         console.error('User creation error:', userError)
-        throw new Error(`User creation error: ${userError.message}`)
+        throw new Error(`User creation error: ${userError?.message || 'Unknown error'}`)
+      }
+      
+      // Create profile record
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.user.id,
+          company_name: tenantData.name,
+          industry: 'E-commerce'
+        })
+        .select()
+        .single()
+      
+      if (profileError) {
+        console.error('Profile creation error:', profileError)
       }
       
       // Create default subscription (trial)
@@ -81,13 +84,13 @@ export class TenantService {
           .eq('name', 'Başlangıç')
           .single()
         
-        if (defaultPlan && tenant?.id) {
+        if (defaultPlan && user.user) {
           await supabase
             .from('subscriptions')
             .insert({
-              tenant_id: tenant.id,
+              user_id: user.user.id,
               plan_id: defaultPlan.id,
-              status: 'active',
+              payment_status: 'paid',
               is_trial: true,
               start_date: new Date().toISOString(),
               end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days trial
@@ -98,8 +101,8 @@ export class TenantService {
       }
       
       return { 
-        tenant: tenant as Tenant || { 
-          id: 'default', 
+        tenant: { 
+          id: user.user.id, 
           name: tenantData.name, 
           email: tenantData.email, 
           created_at: new Date().toISOString(),
@@ -116,14 +119,15 @@ export class TenantService {
   
   async getTenantInfo(tenantId: string): Promise<Tenant> {
     try {
-      // Try to get tenant info, fallback to user metadata if needed
-      const { data: tenant, error } = await supabase
+      // Try to get tenant info from profiles
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('user_id', tenantId)
         .single()
       
-      if (error || !tenant) {
+      if (error || !profile) {
+        console.error('Error getting tenant info:', error)
         // Fallback: create tenant info from user data
         return {
           id: tenantId,
@@ -137,10 +141,10 @@ export class TenantService {
       
       return {
         id: tenantId,
-        name: tenant.company_name || 'Default Tenant',
+        name: profile.company_name || 'Default Tenant',
         email: 'tenant@example.com',
-        created_at: tenant.created_at,
-        updated_at: tenant.updated_at,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at,
         is_active: true
       } as Tenant
     } catch (error) {
@@ -162,16 +166,16 @@ export class TenantService {
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('user_id', tenantId)
       
       if (error || !profiles) {
         console.error('Error fetching tenant users:', error)
         return []
       }
       
-      return profiles.map(profile => ({
+      return profiles.map((profile: any) => ({
         id: profile.user_id,
-        tenant_id: profile.tenant_id || tenantId,
+        tenant_id: profile.user_id,
         email: 'user@example.com',
         name: profile.company_name || 'User',
         role: 'user',

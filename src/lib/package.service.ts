@@ -36,16 +36,19 @@ export class PackageService {
   
   async getTenantPackage(tenantId: string): Promise<Plan> {
     try {
-      // Try to get active subscription first
+      // Try to get active subscription first using direct query
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
-        .select('*, plans(*)')
-        .eq('tenant_id', tenantId)
-        .eq('status', 'active')
+        .select(`
+          *,
+          plans (*)
+        `)
+        .eq('user_id', tenantId)
+        .eq('payment_status', 'paid')
         .single()
       
-      if (!subError && subscription?.plans) {
-        return subscription.plans as Plan
+      if (!subError && subscription && (subscription as any).plans) {
+        return (subscription as any).plans as Plan
       }
       
       // Fallback: Return default plan if no subscription found
@@ -55,7 +58,7 @@ export class PackageService {
         .eq('name', 'Başlangıç')
         .single()
       
-      if (planError) {
+      if (planError || !defaultPlan) {
         console.error('Error fetching default plan:', planError)
         // Return a basic fallback plan
         return {
@@ -106,7 +109,17 @@ export class PackageService {
       const packageInfo = await this.getTenantPackage(tenantId)
       
       // Get current product count
-      const productCount = await this.dbService.countTenantData('products', tenantId)
+      const { count, error } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', tenantId)
+      
+      if (error) {
+        console.error('Error counting products:', error)
+        return false
+      }
+      
+      const productCount = count || 0
       
       // Check against package limit (-1 means unlimited)
       if (packageInfo.product_limit === -1) return true
