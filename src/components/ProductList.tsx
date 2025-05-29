@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Eye, Heart, ShoppingCart, Star } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
+import { Product } from '@/lib/product.service';
 
 interface ProductMetrics {
   basketCount: { count: string; change?: number };
@@ -13,16 +14,8 @@ interface ProductMetrics {
   pageViewCount: { count: string; change?: number };
 }
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string;
-  rating: number;
-  review_count: number;
-  url: string;
+interface ExtendedProduct extends Product {
   metrics?: ProductMetrics;
-  last_updated: string;
 }
 
 export default function ProductList() {
@@ -117,13 +110,13 @@ export default function ProductList() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {products.map((product: Product) => (
+      {products.map((product: ExtendedProduct) => (
         <Card key={product.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
           <CardContent className="p-0">
             {/* Ürün Resmi */}
             <div className="relative">
               <img
-                src={product.image_url}
+                src={product.image_url || '/placeholder.svg'}
                 alt={product.name}
                 className="w-full h-48 object-cover rounded-t-lg"
                 onError={(e) => {
@@ -147,10 +140,10 @@ export default function ProductList() {
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{product.rating}</span>
+                  <span className="text-sm font-medium">{product.rating || 0}</span>
                 </div>
                 <span className="text-xs text-gray-500">
-                  ({product.review_count.toLocaleString('tr-TR')} yorum)
+                  ({(product.review_count || 0).toLocaleString('tr-TR')} yorum)
                 </span>
               </div>
 
