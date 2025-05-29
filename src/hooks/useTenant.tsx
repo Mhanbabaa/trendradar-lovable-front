@@ -29,7 +29,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const tenantService = new TenantService(dbService, packageService)
 
   const refreshTenantInfo = async () => {
-    if (!user?.user_metadata?.tenant_id) {
+    if (!user) {
       setLoading(false)
       return
     }
@@ -38,7 +38,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
       
-      const currentTenantId = user.user_metadata.tenant_id
+      // Tenant ID'yi user metadata'sından al, yoksa user ID'sini kullan
+      const currentTenantId = user.user_metadata?.tenant_id || user.id
       setTenantId(currentTenantId)
       
       const [tenantInfo, planInfo] = await Promise.all([

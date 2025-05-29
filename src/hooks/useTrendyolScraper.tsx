@@ -136,7 +136,11 @@ export function useTrendyolScraper() {
 
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
-      if (!tenantId) throw new Error('Tenant ID bulunamadı');
+      console.log('useTrendyolScraper: tenantId =', tenantId);
+      
+      if (!tenantId) {
+        throw new Error('Kullanıcı bilgileri yükleniyor, lütfen bekleyin veya sayfayı yenileyin');
+      }
 
       setIsLoading(true);
       
@@ -187,6 +191,7 @@ export function useTrendyolScraper() {
       });
     },
     onError: (error) => {
+      console.error('useTrendyolScraper error:', error);
       toast({
         title: "Hata",
         description: error.message,
