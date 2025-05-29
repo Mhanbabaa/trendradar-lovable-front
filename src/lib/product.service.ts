@@ -4,14 +4,18 @@ import { PackageService } from './package.service'
 
 export interface Product {
   id: string
-  tenant_id: string
+  user_id: string
   name: string
   url: string
-  price: number
+  price?: number
   image_url?: string
   category?: string
   rating?: number
   review_count?: number
+  trendyol_id: string
+  seller?: string
+  category_id?: string
+  is_active?: boolean
   created_at: string
   last_updated: string
 }
@@ -43,6 +47,8 @@ export class ProductService {
     category?: string
     rating?: number
     review_count?: number
+    trendyol_id?: string
+    seller?: string
   }): Promise<Product> {
     try {
       // Check package limit
@@ -55,6 +61,7 @@ export class ProductService {
       // Save product
       const product = await this.dbService.saveTenantData<Product>('products', tenantId, {
         ...productData,
+        trendyol_id: productData.trendyol_id || 'unknown',
         created_at: new Date().toISOString(),
         last_updated: new Date().toISOString()
       })

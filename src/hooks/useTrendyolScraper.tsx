@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from './useTenant';
 import { toast } from '@/hooks/use-toast';
+import { useProducts } from './useProducts';
 
 export interface TrendyolProductData {
   name: string;
@@ -46,6 +47,7 @@ export interface ReviewData {
 export function useTrendyolScraper() {
   const { tenantId } = useTenant();
   const queryClient = useQueryClient();
+  const { addProduct: addProductToService } = useProducts();
   const [isLoading, setIsLoading] = useState(false);
 
   // URL'den product ID ve merchant ID'yi çıkarma
@@ -151,34 +153,19 @@ export function useTrendyolScraper() {
         // Ürün verilerini scrape et
         const productData = await scrapeProductData(url);
         
-        // Social proof verilerini al
-        const socialProofData = await getSocialProofData(contentId);
-        
-        // Review verilerini al
-        const reviewData = await getReviewData(contentId, merchantId || productData.merchant_id);
-        
-        // Ürünü veritabanına kaydet
-        const response = await fetch('/api/products', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tenantId,
-            url,
-            productData,
-            socialProofData,
-            reviewData,
-            contentId,
-            merchantId: merchantId || productData.merchant_id
-          }),
+        // Use the addProduct from useProducts hook
+        addProductToService({
+          name: productData.name,
+          url: url,
+          price: productData.price,
+          image_url: productData.image_url,
+          rating: productData.rating,
+          review_count: productData.review_count,
+          trendyol_id: contentId,
+          seller: productData.brand
         });
 
-        if (!response.ok) {
-          throw new Error('Ürün kaydedilemedi');
-        }
-
-        return await response.json();
+        return { success: true };
       } finally {
         setIsLoading(false);
       }

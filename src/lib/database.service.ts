@@ -12,7 +12,9 @@ export class DatabaseService {
       
       // Add tenant_id filter if tenantId is provided
       if (tenantId) {
-        baseQuery = baseQuery.eq('tenant_id', tenantId)
+        // Use user_id for products table, tenant_id for others
+        const filterColumn = table === 'products' ? 'user_id' : 'tenant_id'
+        baseQuery = baseQuery.eq(filterColumn, tenantId)
       }
       
       // Apply additional query filters
@@ -40,9 +42,11 @@ export class DatabaseService {
     data: Record<string, any>
   ): Promise<T> {
     try {
+      // Use user_id for products table, tenant_id for others
+      const idColumn = table === 'products' ? 'user_id' : 'tenant_id'
       const dataWithTenant = {
         ...data,
-        tenant_id: tenantId
+        [idColumn]: tenantId
       }
       
       const { data: result, error } = await supabase
@@ -70,11 +74,14 @@ export class DatabaseService {
     data: Record<string, any>
   ): Promise<T> {
     try {
+      // Use user_id for products table, tenant_id for others
+      const idColumn = table === 'products' ? 'user_id' : 'tenant_id'
+      
       const { data: result, error } = await supabase
         .from(table as any)
         .update(data)
         .eq('id', id)
-        .eq('tenant_id', tenantId)
+        .eq(idColumn, tenantId)
         .select()
         .single()
       
@@ -96,11 +103,14 @@ export class DatabaseService {
     id: string
   ): Promise<void> {
     try {
+      // Use user_id for products table, tenant_id for others
+      const idColumn = table === 'products' ? 'user_id' : 'tenant_id'
+      
       const { error } = await supabase
         .from(table as any)
         .delete()
         .eq('id', id)
-        .eq('tenant_id', tenantId)
+        .eq(idColumn, tenantId)
       
       if (error) {
         console.error(`Database delete error for table ${table}:`, error)
@@ -121,7 +131,9 @@ export class DatabaseService {
       let baseQuery = supabase.from(table as any).select('*', { count: 'exact', head: true })
       
       if (tenantId) {
-        baseQuery = baseQuery.eq('tenant_id', tenantId)
+        // Use user_id for products table, tenant_id for others
+        const filterColumn = table === 'products' ? 'user_id' : 'tenant_id'
+        baseQuery = baseQuery.eq(filterColumn, tenantId)
       }
       
       Object.keys(query).forEach(key => {
