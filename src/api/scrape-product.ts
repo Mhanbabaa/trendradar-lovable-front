@@ -1,22 +1,29 @@
 
-import { NextApiRequest, NextApiResponse } from 'next'
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 
   try {
-    const { url } = req.body
+    const { url } = await req.json()
 
     if (!url || !url.includes('trendyol.com')) {
-      return res.status(400).json({ error: 'Invalid URL' })
+      return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
 
     // Extract product ID from URL
     const contentIdMatch = url.match(/-p-(\d+)/)
     if (!contentIdMatch) {
-      return res.status(400).json({ error: 'Could not extract product ID from URL' })
+      return new Response(JSON.stringify({ error: 'Could not extract product ID from URL' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
 
     const contentId = contentIdMatch[1]
@@ -60,10 +67,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       content_id: contentId
     }
 
-    return res.status(200).json({ product })
+    return new Response(JSON.stringify({ product }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
 
   } catch (error) {
     console.error('Scraping error:', error)
-    return res.status(500).json({ error: 'Failed to scrape product data' })
+    return new Response(JSON.stringify({ error: 'Failed to scrape product data' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }

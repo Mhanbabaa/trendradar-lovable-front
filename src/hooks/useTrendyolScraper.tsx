@@ -18,32 +18,6 @@ export interface TrendyolProductData {
   content_id: string;
 }
 
-export interface SocialProofData {
-  basketCount: { count: string; priority: number };
-  favoriteCount: { count: string; priority: number };
-  orderCountL3D: { count: string; priority: number };
-  pageViewCount: { count: string; priority: number };
-  sentiments?: Array<{
-    tagName: string;
-    reviewCount: number;
-    positiveRatio: number;
-    priority: number;
-  }>;
-}
-
-export interface ReviewData {
-  ratingCounts: Array<{
-    rate: number;
-    count: number;
-    commentCount: number;
-  }>;
-  averageRating: number;
-  totalCommentCount: number;
-  totalRatingCount: number;
-  aiSummary: string;
-  imageUrl?: string;
-}
-
 export function useTrendyolScraper() {
   const { tenantId } = useTenant();
   const queryClient = useQueryClient();
@@ -89,53 +63,6 @@ export function useTrendyolScraper() {
     }
   };
 
-  // Social proof verilerini alma
-  const getSocialProofData = async (contentId: string): Promise<SocialProofData> => {
-    try {
-      const response = await fetch(
-        `https://apigw.trendyol.com/discovery-web-searchgw-service/social-proof?contentIds=${contentId}&client=PDP&channelId=1`
-      );
-
-      if (!response.ok) {
-        throw new Error('Social proof verileri alınamadı');
-      }
-
-      const data = await response.json();
-      return data.result[contentId];
-    } catch (error) {
-      console.error('Social proof error:', error);
-      throw new Error('Sosyal kanıt verileri alınamadı');
-    }
-  };
-
-  // Review verilerini alma
-  const getReviewData = async (contentId: string, sellerId: string): Promise<ReviewData> => {
-    try {
-      const response = await fetch(
-        `https://apigw.trendyol.com/discovery-web-websfxsocialreviewrating-santral/product-reviews-detailed?sellerId=${sellerId}&contentId=${contentId}&pageSize=20&culture=tr-TR&channelId=1&storefrontId=1&aiSummaryVariant=C`
-      );
-
-      if (!response.ok) {
-        throw new Error('Review verileri alınamadı');
-      }
-
-      const data = await response.json();
-      const { ratingCounts, averageRating, totalCommentCount, totalRatingCount, aiSummary, imageUrl } = data.result.contentSummary;
-      
-      return {
-        ratingCounts,
-        averageRating,
-        totalCommentCount,
-        totalRatingCount,
-        aiSummary,
-        imageUrl
-      };
-    } catch (error) {
-      console.error('Review data error:', error);
-      throw new Error('Yorum verileri alınamadı');
-    }
-  };
-
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
       console.log('useTrendyolScraper: tenantId =', tenantId);
@@ -153,16 +80,14 @@ export function useTrendyolScraper() {
         // Ürün verilerini scrape et
         const productData = await scrapeProductData(url);
         
-        // Use the addProduct from useProducts hook
+        // Use the addProduct from useProducts hook (without trendyol_id)
         addProductToService({
           name: productData.name,
           url: url,
           price: productData.price,
           image_url: productData.image_url,
           rating: productData.rating,
-          review_count: productData.review_count,
-          trendyol_id: contentId,
-          seller: productData.brand
+          review_count: productData.review_count
         });
 
         return { success: true };
