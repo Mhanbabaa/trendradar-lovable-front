@@ -22,7 +22,11 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('📝 Form submitted with URL:', url);
+    console.log('⏳ Current loading state:', isLoading);
+    
     if (!url.trim()) {
+      console.log('❌ Empty URL validation failed');
       toast({
         title: "Hata",
         description: "Lütfen geçerli bir Trendyol URL'si girin",
@@ -33,6 +37,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
 
     // Trendyol URL formatını kontrol et
     if (!url.includes('trendyol.com') || !url.includes('-p-')) {
+      console.log('❌ URL format validation failed:', url);
       toast({
         title: "Hata",
         description: "Lütfen geçerli bir Trendyol ürün URL'si girin",
@@ -41,8 +46,11 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       return;
     }
 
+    console.log('✅ URL validation passed, calling addProduct');
+
     try {
       await addProduct(url);
+      console.log('✅ addProduct completed successfully');
       toast({
         title: "Başarılı",
         description: "Ürün başarıyla eklendi ve veriler toplanıyor",
@@ -51,6 +59,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       onClose();
       onProductAdded();
     } catch (error) {
+      console.error('❌ Error in handleSubmit:', error);
       toast({
         title: "Hata",
         description: error instanceof Error ? error.message : "Ürün eklenirken bir hata oluştu",

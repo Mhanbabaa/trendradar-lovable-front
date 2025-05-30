@@ -1,6 +1,9 @@
 
 export default async function handler(req: Request): Promise<Response> {
+  console.log('🌐 Scrape API called - Method:', req.method);
+  
   if (req.method !== 'POST') {
+    console.log('❌ Invalid method:', req.method);
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
       headers: { 'Content-Type': 'application/json' }
@@ -8,9 +11,12 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { url } = await req.json()
+    const body = await req.json()
+    const { url } = body
+    console.log('📥 Request body:', { url });
 
     if (!url || !url.includes('trendyol.com')) {
+      console.log('❌ Invalid URL validation failed:', url);
       return new Response(JSON.stringify({ error: 'Invalid URL' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -18,8 +24,10 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     // Extract product ID from URL
+    console.log('🔍 Extracting content ID from URL:', url);
     const contentIdMatch = url.match(/-p-(\d+)/)
     if (!contentIdMatch) {
+      console.log('❌ Could not extract product ID from URL');
       return new Response(JSON.stringify({ error: 'Could not extract product ID from URL' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -27,29 +35,40 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     const contentId = contentIdMatch[1]
+    console.log('✅ Extracted content ID:', contentId);
 
     // Fetch the product page
+    console.log('🌐 Fetching product page...');
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
     })
 
+    console.log('📡 Fetch response status:', response.status, response.statusText);
+
     if (!response.ok) {
+      console.log('❌ Failed to fetch product page:', response.status);
       throw new Error('Failed to fetch product page')
     }
 
     const html = await response.text()
+    console.log('📄 HTML fetched, length:', html.length);
 
     // Extract JSON-LD data
+    console.log('🔍 Looking for JSON-LD data...');
     const jsonLdMatch = html.match(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/s)
     if (!jsonLdMatch) {
+      console.log('❌ Could not find JSON-LD data in HTML');
       throw new Error('Could not find product data')
     }
 
+    console.log('✅ Found JSON-LD data, parsing...');
     const productData = JSON.parse(jsonLdMatch[1])
+    console.log('📦 Parsed product data type:', productData['@type']);
 
     if (productData['@type'] !== 'Product') {
+      console.log('❌ Invalid product data type:', productData['@type']);
       throw new Error('Invalid product data')
     }
 
@@ -67,13 +86,15 @@ export default async function handler(req: Request): Promise<Response> {
       content_id: contentId
     }
 
+    console.log('✅ Extracted product info:', product);
+
     return new Response(JSON.stringify({ product }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
-    console.error('Scraping error:', error)
+    console.error('💥 Scraping error:', error)
     return new Response(JSON.stringify({ error: 'Failed to scrape product data' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

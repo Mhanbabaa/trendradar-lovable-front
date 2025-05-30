@@ -26,12 +26,15 @@ export function useTrendyolScraper() {
 
   // URL'den product ID ve merchant ID'yi çıkarma
   const extractProductInfo = (url: string) => {
+    console.log('🔍 Extracting product info from URL:', url);
     const urlParams = new URLSearchParams(url.split('?')[1] || '');
     const merchantId = urlParams.get('merchantId');
     
     // -p- sonrası content ID'yi al
     const contentIdMatch = url.match(/-p-(\d+)/);
     const contentId = contentIdMatch ? contentIdMatch[1] : null;
+    
+    console.log('📋 Extracted content ID:', contentId, 'merchant ID:', merchantId);
     
     if (!contentId) {
       throw new Error('URL\'den ürün ID\'si çıkarılamadı');
@@ -43,6 +46,8 @@ export function useTrendyolScraper() {
   // Trendyol HTML'den ürün verilerini çıkarma
   const scrapeProductData = async (url: string): Promise<TrendyolProductData> => {
     try {
+      console.log('🌐 Starting scraping request for URL:', url);
+      
       const response = await fetch(`/api/scrape-product`, {
         method: 'POST',
         headers: {
@@ -51,67 +56,90 @@ export function useTrendyolScraper() {
         body: JSON.stringify({ url }),
       });
 
+      console.log('📡 Scraping API response status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Scraping API error:', errorData);
         throw new Error(errorData.error || 'Ürün verileri alınamadı');
       }
 
       const data = await response.json();
+      console.log('✅ Scraped product data:', data.product);
       return data.product;
     } catch (error) {
-      console.error('Scraping error:', error);
+      console.error('💥 Scraping error:', error);
       throw new Error(error instanceof Error ? error.message : 'Ürün bilgileri çekilirken hata oluştu');
     }
   };
 
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
-      console.log('useTrendyolScraper: starting product addition for tenantId =', tenantId);
+      console.log('🚀 useTrendyolScraper: starting product addition process');
+      console.log('👤 Current tenantId:', tenantId);
+      console.log('🔗 Product URL:', url);
       
       if (!tenantId) {
+        console.error('❌ No tenant ID available');
         throw new Error('Kullanıcı bilgileri yükleniyor, lütfen bekleyin veya sayfayı yenileyin');
       }
 
       setIsLoading(true);
+      console.log('⏳ Loading state set to true');
       
       try {
         // URL'den product bilgilerini çıkar
-        console.log('Extracting product info from URL:', url);
+        console.log('🔍 Step 1: Extracting product info from URL');
         const { contentId, merchantId } = extractProductInfo(url);
-        console.log('Extracted info - contentId:', contentId, 'merchantId:', merchantId);
+        console.log('✅ Step 1 completed - contentId:', contentId, 'merchantId:', merchantId);
         
         // Ürün verilerini scrape et
-        console.log('Starting product scraping...');
+        console.log('🌐 Step 2: Starting product scraping');
         const productData = await scrapeProductData(url);
-        console.log('Scraped product data:', productData);
+        console.log('✅ Step 2 completed - scraped data:', productData);
         
         // Use the addProduct from useProducts hook
-        console.log('Adding product to service...');
-        const result = await new Promise((resolve, reject) => {
-          addProductToService({
-            name: productData.name,
-            url: url,
-            price: productData.price,
-            image_url: productData.image_url,
-            rating: productData.rating,
-            review_count: productData.review_count
-          });
-          
-          // Since addProductToService doesn't return a promise, we'll consider it successful
-          setTimeout(() => resolve({ success: true }), 100);
+        console.log('💾 Step 3: Adding product to database');
+        console.log('📦 Product data to be saved:', {
+          name: productData.name,
+          url: url,
+          price: productData.price,
+          image_url: productData.image_url,
+          rating: productData.rating,
+          review_count: productData.review_count
         });
 
-        console.log('Product added successfully:', result);
+        // Call the addProduct function and wait for it
+        await new Promise<void>((resolve, reject) => {
+          try {
+            addProductToService({
+              name: productData.name,
+              url: url,
+              price: productData.price,
+              image_url: productData.image_url,
+              rating: productData.rating,
+              review_count: productData.review_count
+            });
+            console.log('✅ Step 3 completed - product add function called');
+            setTimeout(() => resolve(), 1000); // Give it a moment to process
+          } catch (error) {
+            console.error('❌ Error calling addProductToService:', error);
+            reject(error);
+          }
+        });
+
+        console.log('🎉 Product addition process completed successfully');
         return { success: true };
       } catch (error) {
-        console.error('Error in addProductMutation:', error);
+        console.error('💥 Error in addProductMutation:', error);
         throw error;
       } finally {
+        console.log('⏳ Setting loading state to false');
         setIsLoading(false);
       }
     },
     onSuccess: () => {
-      console.log('Product addition successful, invalidating queries...');
+      console.log('🎯 Product addition mutation successful');
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({
         title: "Başarılı",
@@ -119,7 +147,7 @@ export function useTrendyolScraper() {
       });
     },
     onError: (error) => {
-      console.error('useTrendyolScraper error:', error);
+      console.error('❌ useTrendyolScraper mutation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu';
       toast({
         title: "Hata",
@@ -130,7 +158,10 @@ export function useTrendyolScraper() {
   });
 
   return {
-    addProduct: addProductMutation.mutate,
+    addProduct: (url: string) => {
+      console.log('🎬 addProduct called with URL:', url);
+      addProductMutation.mutate(url);
+    },
     isLoading: isLoading || addProductMutation.isPending,
   };
 }
