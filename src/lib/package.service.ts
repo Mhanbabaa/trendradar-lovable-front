@@ -1,4 +1,3 @@
-
 import { DatabaseService } from './database.service'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -16,11 +15,10 @@ export interface Plan {
 
 export interface Subscription {
   id: string
-  tenant_id: string
+  user_id: string
   plan_id: string
   start_date: string
   end_date: string
-  status: string
   payment_status: string
   auto_renew: boolean
   is_trial: boolean
@@ -36,7 +34,9 @@ export class PackageService {
   
   async getTenantPackage(tenantId: string): Promise<Plan> {
     try {
-      // Try to get active subscription first using direct query
+      console.log('Getting tenant package for:', tenantId)
+      
+      // Try to get active subscription first using direct query with proper syntax
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .select(`
@@ -45,45 +45,61 @@ export class PackageService {
         `)
         .eq('user_id', tenantId)
         .eq('payment_status', 'paid')
-        .single()
+        .maybeSingle()
+      
+      console.log('Subscription query result:', subscription, 'Error:', subError)
       
       if (!subError && subscription && (subscription as any).plans) {
+        console.log('Found active subscription with plan:', (subscription as any).plans)
         return (subscription as any).plans as Plan
       }
       
-      // Fallback: Return default plan if no subscription found
+      // Fallback: Return Admin plan if no subscription found
+      const { data: adminPlan, error: adminPlanError } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('name', 'Admin')
+        .maybeSingle()
+      
+      if (!adminPlanError && adminPlan) {
+        console.log('Using Admin plan as fallback:', adminPlan)
+        return adminPlan as Plan
+      }
+      
+      // Final fallback: Return default plan
       const { data: defaultPlan, error: planError } = await supabase
         .from('plans')
         .select('*')
         .eq('name', 'Başlangıç')
-        .single()
+        .maybeSingle()
       
-      if (planError || !defaultPlan) {
-        console.error('Error fetching default plan:', planError)
-        // Return a basic fallback plan
-        return {
-          id: 'default',
-          name: 'Başlangıç',
-          description: 'Başlangıç Paketi',
-          price_monthly: 199,
-          price_yearly: 1990,
-          product_limit: 10,
-          update_frequency: 'daily',
-          features: {
-            basic_reports: true,
-            price_tracking: true,
-            sentiment_analysis: false,
-            category_analysis: false,
-            comprehensive_reports: false,
-            api_access: false,
-            real_time_updates: false,
-            unlimited_history: false
-          },
-          is_active: true
-        }
+      if (!planError && defaultPlan) {
+        console.log('Using default plan as fallback:', defaultPlan)
+        return defaultPlan as Plan
       }
       
-      return defaultPlan as Plan
+      console.log('No plans found, using hardcoded fallback')
+      // Return a basic fallback plan
+      return {
+        id: 'default',
+        name: 'Başlangıç',
+        description: 'Başlangıç Paketi',
+        price_monthly: 199,
+        price_yearly: 1990,
+        product_limit: 10,
+        update_frequency: 'daily',
+        features: {
+          basic_reports: true,
+          price_tracking: true,
+          sentiment_analysis: false,
+          category_analysis: false,
+          comprehensive_reports: false,
+          api_access: false,
+          real_time_updates: false,
+          unlimited_history: false
+        },
+        is_active: true
+      }
     } catch (error) {
       console.error('Error in getTenantPackage:', error)
       // Return basic fallback plan
@@ -106,7 +122,10 @@ export class PackageService {
   
   async checkProductLimit(tenantId: string): Promise<boolean> {
     try {
+      console.log('Checking product limit for tenant:', tenantId)
+      
       const packageInfo = await this.getTenantPackage(tenantId)
+      console.log('Package info for limit check:', packageInfo)
       
       // Get current product count
       const { count, error } = await supabase
@@ -120,11 +139,17 @@ export class PackageService {
       }
       
       const productCount = count || 0
+      console.log('Current product count:', productCount, 'Limit:', packageInfo.product_limit)
       
       // Check against package limit (-1 means unlimited)
-      if (packageInfo.product_limit === -1) return true
+      if (packageInfo.product_limit === -1 || packageInfo.product_limit >= 999999) {
+        console.log('Unlimited products allowed')
+        return true
+      }
       
-      return productCount < packageInfo.product_limit
+      const canAdd = productCount < packageInfo.product_limit
+      console.log('Can add product:', canAdd)
+      return canAdd
     } catch (error) {
       console.error('Error checking product limit:', error)
       return false
@@ -160,6 +185,7 @@ export class PackageService {
       case 'İşletme':
         return 365 // 12 months
       case 'Kurumsal':
+      case 'Admin':
         return -1 // Unlimited
       default:
         return 30
@@ -174,6 +200,7 @@ export class PackageService {
       case 'İşletme':
         return 5
       case 'Kurumsal':
+      case 'Admin':
         return -1 // Unlimited
       default:
         return 1
