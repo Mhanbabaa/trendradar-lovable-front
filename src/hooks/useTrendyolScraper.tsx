@@ -57,14 +57,32 @@ export function useTrendyolScraper() {
       });
 
       console.log('📡 Scraping API response status:', response.status, response.statusText);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          console.error('❌ Could not parse error response as JSON:', parseError);
+          const textResponse = await response.text();
+          console.error('❌ Raw error response:', textResponse.substring(0, 500));
+          throw new Error(`API yanıtı beklenmeyen format: ${response.status} ${response.statusText}`);
+        }
         console.error('❌ Scraping API error:', errorData);
         throw new Error(errorData.error || 'Ürün verileri alınamadı');
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('❌ Could not parse successful response as JSON:', parseError);
+        const textResponse = await response.text();
+        console.error('❌ Raw successful response:', textResponse.substring(0, 500));
+        throw new Error('API yanıtı beklenmeyen format');
+      }
+
       console.log('✅ Scraped product data:', data.product);
       return data.product;
     } catch (error) {
@@ -160,7 +178,7 @@ export function useTrendyolScraper() {
   return {
     addProduct: (url: string) => {
       console.log('🎬 addProduct called with URL:', url);
-      addProductMutation.mutate(url);
+      return addProductMutation.mutateAsync(url);
     },
     isLoading: isLoading || addProductMutation.isPending,
   };
